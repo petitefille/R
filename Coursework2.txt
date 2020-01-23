@@ -1,0 +1,239 @@
+# Coursework 2
+
+# TASK 1:
+
+# 1 c) (i)
+
+# read data from file SPdata.txt
+# n
+# setwd("...")
+x = read.table(file="SPdata.txt", header = FALSE, sep = " ", dec = ".")
+SP = rep(0,1258) # vector to store log S&P 500 daily returns
+
+VIX = rep(0,1258) # vector to store VIX index at the start of each daily period
+for (i in 1: 1258){
+   SP[i] = x[i,1] # log S&P 500 daily returns
+   VIX[i] = x[i,2] # VIX index at the start of each daily period
+}
+
+# plotting log S&P 500 daily returns against VIX index
+plot(range(VIX),range(SP))
+plot(VIX,SP, xlab ="VIX index", ylab = "log S&P 500 daily returns")  
+
+
+# 1 (c) (ii)
+y = SP # observed daily log-returns of a share in the S&P 500
+z = VIX # the VIX index at the start of each daily period 
+
+n = length(y) # 1258 
+beta = c(0,1,10,100) # values of beta 
+mu_hat_vec = rep(0,4) # vector to store mu_hat
+alpha_hat_vec = rep(0,4) # vector to store alpha_hat
+alpha_beta = rep(0,4) # Vector to stor product of alpha with beta
+loglik_vec = rep(0,4) # vector sto store log-likelihood for the MLEs
+
+
+for (i in 1: length(beta)) {
+  
+     mu_hat = mean(y)
+     mu_hat_vec[i] = mu_hat
+     alpha_hat = sum( (( y - mean(y))^2) /  (1+beta[i]*z) )
+     alpha_hat_vec[i] = alpha_hat
+     alpha_beta[i] = alpha_hat*beta[i]
+     loglik = -(n/2)*log(2*pi) - sum( (1/2)*log( alpha_hat* (1+beta[i]*z) ) ) - sum( ( (y-mu_hat)^2) / (2*alpha_hat*(1 + beta[i]*z) ) )
+     loglik_vec[i] = loglik
+}
+
+beta #  0   1  10 100
+mu_hat_vec # 0.0003682654 0.0003682654 0.0003682654 0.0003682654
+alpha_hat_vec # 1.244101e-01 5.443245e-03 5.697105e-04 5.723935e-05
+loglik_vec  # 154.4196 315.4186 320.7240 321.2754
+alpha_beta # 0.000000000 0.005443245 0.005697105 0.005723935
+
+
+#
+# TASK 2
+
+# 2 (b)
+
+# setwd(...)
+# read file bwages.txt
+x = read.table("bwages.txt" , fill = TRUE )
+# x = read.table(file="bwages.txt", header = FALSE, sep = " ", dec = ".")
+
+# vectors to store data
+wage = rep(0,1742)
+lnwage = rep(0,1472) # y
+educ = rep(0,1472) # x(i1)
+exper = rep(0,1472) # x(i2)
+lnexper = rep(0,1472) # x(i3)
+lneduc = rep(0,1472)  # x(i4)
+male = rep(0,1472) # x(i5)
+
+for (i in 1:1472){
+  wage[i] = x[i,1]
+  lnwage[i] = x[i,2] # y
+  educ[i] = x[i,3] # x(i1)
+  exper[i] = x[i,4] # x(i2)
+  lnexper[i] = x[i,5] # x(i3)
+  lneduc[i] = x[i,6]  # x(i4)
+  male[i] = x[i,7] # x(i5)
+}
+
+# store vectors in one structure 
+predictsp = structure(list(y=lnwage,x1 = educ,x2 = exper, x3 = lnexper, x4 = lneduc, x5 = male),.Names = c("lnwage","educ", "exper", "lnexper", "lneduc", "male"), class ="data.frame", row.names = c(NA,-1472L))
+
+# We split the data into 2 sets. Use the first 1000 observations for fitting the model and 
+# the remaining 472 observations for predictions (test data set)
+
+fit= predictsp[1:1000,] # first 1000 observations for fitting the model
+test = predictsp[1001:1472,] # remaining 472 observations for predictions 
+
+out = lm(fit) # fit linear:model
+summary(out)
+
+#
+# Call:
+#  lm(formula = fit)
+
+#Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -1.64381 -0.14923  0.00893  0.15507  1.13679 
+
+# Coefficients:
+#             Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)  4.868775   0.068439  71.141  < 2e-16 ***
+# educ         0.161260   0.041823   3.856 0.000123 ***
+# exper        0.001311   0.002222   0.590 0.555451    
+# lnexper      0.196788   0.032145   6.122 1.33e-09 ***
+# lneduc      -0.020300   0.095310  -0.213 0.831375    
+# male         0.131231   0.017977   7.300 5.88e-13 ***
+  ---
+#  Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+# Residual standard error: 0.2664 on 994 degrees of freedom
+# Multiple R-squared:  0.3222,	Adjusted R-squared:  0.3188 
+# F-statistic:  94.5 on 5 and 994 DF,  p-value: < 2.2e-16
+
+## stepwise -- remove lneduc (column 5)
+out = lm(fit[,-5])
+summary(out)
+
+# Call:
+#   lm(formula = fit[, -5])
+
+#Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -1.64550 -0.14968  0.00911  0.15576  1.13568 
+
+# Coefficients:
+#              Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 4.873836   0.064151  75.974  < 2e-16 ***
+# educ        0.152606   0.009910  15.399  < 2e-16 ***
+# exper       0.001345   0.002216   0.607    0.544    
+# lnexper     0.196452   0.032091   6.122 1.33e-09 ***
+# male        0.131073   0.017953   7.301 5.84e-13 ***
+#  ---
+#  Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+# Residual standard error: 0.2663 on 995 degrees of freedom
+# Multiple R-squared:  0.3222,	Adjusted R-squared:  0.3194 
+# F-statistic: 118.2 on 4 and 995 DF,  p-value: < 2.2e-16
+
+
+## stepwise -- remove exper (column 3)
+out = lm(fit[,-c(3,5)])
+summary(out) 
+
+# Call:
+#  lm(formula = fit[, -c(3, 5)])
+
+# Residuals:
+#   Min       1Q   Median       3Q      Max 
+# -1.62628 -0.15010  0.00814  0.15504  1.13506 
+
+# Coefficients:
+#              Estimate Std. Error t value Pr(>|t|)    
+# (Intercept) 4.850587   0.051439  94.297  < 2e-16 ***
+# educ        0.151883   0.009835  15.443  < 2e-16 ***
+# lnexper     0.214378   0.012536  17.101  < 2e-16 ***
+# male        0.131572   0.017928   7.339 4.47e-13 ***
+#  ---
+# Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+# Residual standard error: 0.2662 on 996 degrees of freedom
+# Multiple R-squared:  0.3219,	Adjusted R-squared:  0.3199 
+# F-statistic: 157.6 on 3 and 996 DF,  p-value: < 2.2e-16
+  
+
+alpha_hat = 4.850587 # lnwage
+beta1_hat = 0.151883 # educ
+beta3_hat = 0.214378 # lnexper
+beta5_hat = 0.131572 # male
+SE_alpha_hat = 0.051439
+SE_beta1_hat = 0.009835
+SE_beta3_hat = 0.012536
+SE_beta5_hat = 0.017928
+
+# 2 (c)
+
+observed = fit[,1] # yi
+expected = out$fit # yi_hat
+
+# plot of observed against expected
+plot(range(expected), range(observed))
+plot(expected, observed, xlab = "expected log wage", ylab = "observed log wage")
+abline(a = 0, b = 1, col = "red")
+
+# normal qqplot of residuals   
+res = observed - expected
+
+# plot of expected against residuals
+plot(range(expected), range(res))
+plot(expected,res, xlab = "expected log wage", ylab = "residuals")
+abline(h =0, col ="red")
+
+## QQ-Plot of residuals
+qqnorm(res)
+qqline(res, col ="red")
+
+# 2 (d)
+forecasts = predict.lm(out,test[,-c(3,5)])
+
+
+# mean square error
+MSE = mean((test[,1] - forecasts)^2) # 0.098 622 64  
+
+# correlation between the observed and the predicted wages
+R = cor(forecasts, test[,1]) # 0.556 007 9  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
